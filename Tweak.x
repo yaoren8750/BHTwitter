@@ -2,7 +2,7 @@
 #import "Colours/Colours.h"
 #import "BHTManager.h"
 #import "BHTBundle/BHTBundle.h"
-
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 static UIFont * _Nullable TAEStandardFontGroupReplacement(UIFont *self, SEL _cmd, CGFloat arg1, CGFloat arg2) {
     BH_BaseImp orig  = originalFontsIMP[NSStringFromSelector(_cmd)].pointerValue;
     NSUInteger nArgs = [[self class] instanceMethodSignatureForSelector:_cmd].numberOfArguments;
@@ -551,7 +551,7 @@ static void batchSwizzlingOnClass(Class cls, NSArray<NSString*>*origSelectors, I
 }
 %new - (void)handleUploadButton:(UIButton *)sender {
     UIImagePickerController *videoPicker = [[UIImagePickerController alloc] init];
-    videoPicker.mediaTypes = @[(NSString*)kUTTypeMovie];
+    videoPicker.mediaTypes = @[UTTypeMovie.identifier];
     videoPicker.delegate = self;
     
     [topMostController() presentViewController:videoPicker animated:YES completion:nil];
