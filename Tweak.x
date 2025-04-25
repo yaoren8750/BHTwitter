@@ -660,11 +660,11 @@ static void batchSwizzlingOnClass(Class cls, NSArray<NSString*>*origSelectors, I
             T1StatusCell *tweetView;
             
             if ([actionsView.superview isKindOfClass:%c(T1StandardStatusView)]) { // normal tweet in the time line
-                tweetView = [(T1StandardStatusView *)actionsView.superview eventHandler];
+                tweetView = (T1StatusCell *)[(T1StandardStatusView *)actionsView.superview eventHandler];
             } else if ([actionsView.superview isKindOfClass:%c(T1TweetDetailsFocalStatusView)]) { // Focus tweet
-                tweetView = [(T1TweetDetailsFocalStatusView *)actionsView.superview eventHandler];
+                tweetView = (T1StatusCell *)[(T1StandardStatusView *)actionsView.superview eventHandler];
             } else if ([actionsView.superview isKindOfClass:%c(T1ConversationFocalStatusView)]) { // Focus tweet
-                tweetView = [(T1ConversationFocalStatusView *)actionsView.superview eventHandler];
+                tweetView = (T1StatusCell *)[(T1StandardStatusView *)actionsView.superview eventHandler];
             } else {
                 return %orig;
             }
