@@ -12,7 +12,7 @@ BHTwitter_EXTRA_FRAMEWORKS = Cephei CepheiPrefs CepheiUI
 BHTwitter_OBJ_FILES = $(shell find lib -name '*.a')
 BHTwitter_LIBRARIES = sqlite3 bz2 c++ iconv z
 BHTwitter_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-nullability-completeness -Wno-unused-function -Wno-unused-property-ivar -Wno-error
-
+BHTwitter_FRAMEWORKS = UIKit Preferences
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 ifdef SIDELOADED
