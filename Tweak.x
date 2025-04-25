@@ -688,7 +688,7 @@ static void batchSwizzlingOnClass(Class cls, NSArray<NSString*>*origSelectors, I
 - (void)didLongPressActionButton:(UILongPressGestureRecognizer *)gestureRecognizer {
     if ([BHTManager tweetToImage]) {
         if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
-            T1StatusInlineActionsView *actionsView = self.delegate;
+            T1StatusInlineActionsView *actionsView = (T1StatusInlineActionsView *)self.delegate;
             T1StatusCell *tweetView;
             
             if ([actionsView.superview isKindOfClass:%c(T1StandardStatusView)]) { // normal tweet in the time line
