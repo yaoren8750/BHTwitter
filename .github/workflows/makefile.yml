@@ -35,11 +35,13 @@ jobs:
       - name: Update SDK
         run: |
           XCODE_PATH=$(xcode-select -p)
-          SDK_PATH="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk"
-          THEOS_SDK_PATH="${{ github.workspace }}/theos/sdks/iPhoneOS.sdk"
-          if [ ! -d "$THEOS_SDK_PATH" ]; then
-            echo "Copying SDK from Xcode to Theos..."
-            mkdir -p "${{ github.workspace }}/theos/sdks"
-            cp -R "$SDK_PATH" "$THEOS_SDK_PATH"
-          else
-            echo "SDK already
+SDK_PATH="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk"
+THEOS_SDK_PATH="/Users/runner/work/BHTwitter/BHTwitter/theos/sdks/iPhoneOS.sdk"
+
+if [ ! -d "$THEOS_SDK_PATH" ]; then
+  echo "Copying SDK from Xcode to Theos..."
+  mkdir -p "/Users/runner/work/BHTwitter/BHTwitter/theos/sdks"
+  cp -R "$SDK_PATH" "$THEOS_SDK_PATH"
+else
+  echo "SDK already exists in Theos."
+fi
