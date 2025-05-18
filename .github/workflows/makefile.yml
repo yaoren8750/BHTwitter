@@ -57,7 +57,15 @@ jobs:
       - name: Install Dependencies
         run: brew install make dpkg ldid
 
-      
+      - name: Download iOS SDK
+  run: |
+    git clone -n --depth=1 --filter=tree:0 https://github.com/theos/sdks/
+    cd sdks
+    git sparse-checkout set --no-cone iPhoneOS${{ inputs.sdk_version }}.sdk
+    git checkout
+    mv ./*.sdk "${THEOS}/sdks"
+  env:
+    THEOS: ${{ github.workspace }}/theos
 
       # 构建 DEB 包
       - name: Build Package
