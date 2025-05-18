@@ -1,103 +1,107 @@
-name: Build deb
+name: Build and Release BHTwitter
 
 on:
   push:
   pull_request:
-  workflow_dispatch:
-    inputs:
-      sdk_version:
-        description: "iOS SDK Version"
-        default: "16.5"
-        required: true
-        type: string
-      target_version:
-        description: "Target iOS Version"
-        default: "14.0"
-        required: true
-        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: macos-latest
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
+    name: Build BHTwitter
+    runs-on: macos-13
+    permissions:
+      contents: write
 
     steps:
-      # 检出代码
-      - name: Checkout Code
+      # 检出主代码和子模块
+      - name: Checkout Main
         uses: actions/checkout@v4
         with:
-          submodules: true
-          ref: ${{ github.event.inputs.commit_id || github.ref }}
-
-      # 检查缓存
-      - name: Check Cache
-        run: |
-          echo upstream_heads=$(git ls-remote https://github.com/roothide/theos | head -n 1 | cut -f 1)-$(git ls-remote https://github.com/theos/sdks | head -n 1 | cut -f 1) >> $GITHUB_ENV
-
-      # 使用缓存
-      - name: Use Cache
-        id: cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/theos
-          key: ${{ runner.os }}-${{ env.upstream_heads }}
-
-      # 准备 Theos 环境
-      - name: Prepare Theos
-        uses: huami1314/theos-action@main
-
-      # 添加 GNU Make 到 PATH
-      - name: Setup GNU Make
-        run: |
-          echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH
+          path: main
+          ref: ${{ github.ref }}
+          submodules: recursive
 
       # 安装依赖
       - name: Install Dependencies
         run: brew install make dpkg ldid
 
-      - name: Download iOS SDK
-  run: |
-    git clone -n --depth=1 --filter=tree:0 https://github.com/theos/sdks/
-    cd sdks
-    git sparse-checkout set --no-cone iPhoneOS${{ inputs.sdk_version }}.sdk
-    git checkout
-    mv ./*.sdk "${THEOS}/sdks"
-  env:
-    THEOS: ${{ github.workspace }}/theos
-
-      # 构建 DEB 包
-      - name: Build Package
+      # 添加 GNU Make 到 PATH
+      - name: Add GNU Make to PATH
         run: |
-          rm -f packages/*
-          make package FINALPACKAGE=1 -j$(sysctl -n hw.ncpu)
-          make package THEOS_PACKAGE_SCHEME=rootless FINALPACKAGE=1 -j$(sysctl -n hw.ncpu)
-          make package THEOS_PACKAGE_SCHEME=roothide FINALPACKAGE=1 -j$(sysctl -n hw.ncpu)
+          echo "$(brew --prefix make)/libexec/gnubin" >> "$GITHUB_PATH"
+
+      # 下载 Theos
+      - name: Download Theos
+        uses: actions/checkout@v4
+        with:
+          repository: theos/theos
+          ref: master
+          path: theos
+          submodules: recursive
+
+      # iOS SDK 缓存
+      - name: iOS SDK Caching
+        id: SDK
+        uses: actions/cache@v4
+        env:
+          cache-name: iOS-16.5-SDK
+        with:
+          path: theos/sdks/
+          key: ${{ env.cache-name }}
+          restore-keys: ${{ env.cache-name }}
+
+      # 下载 iOS SDK（如果没有命中缓存）
+      - name: Download iOS SDK
+        if: steps.SDK.outputs.cache-hit != 'true'
+        run: |
+          git clone -n --depth=1 --filter=tree:0 https://github.com/theos/sdks/
+          cd sdks
+          git sparse-checkout set --no-cone iPhoneOS16.5.sdk
+          git checkout
+          mv ./*.sdk "${THEOS}/sdks"
         env:
           THEOS: ${{ github.workspace }}/theos
 
-      # 调试输出
-      - name: Debug Package Directory
-        run: ls -R ${{ github.workspace }}/packages
+      # 获取 BHTwitter 版本号
+      - name: Get BHTwitter Version
+        run: |
+          BHTWITTER_VERSION=$(awk '/Version:/ {print $2}' main/control)
+          echo "BHTWITTER_VERSION=${BHTWITTER_VERSION}" >> "$GITHUB_ENV"
+          echo "$BHTWITTER_VERSION"
 
-      # 上传 DEB 包
-      - name: Upload Deb Packages
+      # 构建包
+      - name: Build Package
+        run: |
+          cd ${{ github.workspace }}/main
+          sed -i '' "s/^TARGET.*$/TARGET := iphone:clang:16.5:14.0/" Makefile
+          make package FINALPACKAGE=1 -j$(sysctl -n hw.ncpu)
+        env:
+          THEOS: ${{ github.workspace }}/theos
+
+      # 传递包名
+      - name: Pass package name
+        id: package_name
+        run: |
+          echo "package=$(ls -t main/packages | head -n1)" >> "$GITHUB_OUTPUT"
+
+      # 上传构建产物
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BHTwitter_${{ env.VERSION }}
-          path: ${{ github.workspace }}/packages/*.deb
-          if-no-files-found: warn
+          name: BHTwitter_${{ env.BHTWITTER_VERSION }}
+          path: ${{ github.workspace }}/main/packages/${{ steps.package_name.outputs.package }}
+          if-no-files-found: error
 
-      # 可选：创建 GitHub Release
+      # 创建草稿 Release
       - name: Create Draft Release
-        if: ${{ inputs.create_release }}
-        id: create_release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.VERSION }}
-          name: v${{ env.VERSION }} - BHTwitter
-          files: ${{ github.workspace }}/packages/*.deb
+          tag_name: v${{ env.BHTWITTER_VERSION }}
+          name: v${{ env.BHTWITTER_VERSION }} - BHTwitter
+          files: main/packages/${{ steps.package_name.outputs.package }}
           draft: true
