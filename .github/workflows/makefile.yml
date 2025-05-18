@@ -76,7 +76,7 @@ jobs:
       - name: Build Package
         run: |
           cd ${{ github.workspace }}/main
-          sed -i '' "s/^TARGET.*$/TARGET := iphone:clang:16.5:14.0/" Makefile
+          sed -i '' "s/^TARGET.*$/TARGET := iphone:clang:16.5:14.0 arm64/" Makefile
           make package FINALPACKAGE=1 -j$(sysctl -n hw.ncpu)
         env:
           THEOS: ${{ github.workspace }}/theos
