@@ -65,13 +65,7 @@ jobs:
         env:
           THEOS: ${{ github.workspace }}/theos
 
-      # 获取 BHTwitter 版本号
-      - name: Get BHTwitter Version
-        run: |
-          BHTWITTER_VERSION=$(awk '/Version:/ {print $2}' main/control)
-          echo "BHTWITTER_VERSION=${BHTWITTER_VERSION}" >> "$GITHUB_ENV"
-          echo "$BHTWITTER_VERSION"
-
+     
       # 构建包
       - name: Build Package
         run: |
@@ -95,13 +89,4 @@ jobs:
           path: ${{ github.workspace }}/main/packages/${{ steps.package_name.outputs.package }}
           if-no-files-found: error
 
-      # 创建草稿 Release
-      - name: Create Draft Release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ env.BHTWITTER_VERSION }}
-          name: v${{ env.BHTWITTER_VERSION }} - BHTwitter
-          files: main/packages/${{ steps.package_name.outputs.package }}
-          draft: true
+   
